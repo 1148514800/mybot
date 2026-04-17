@@ -1,0 +1,16 @@
+{
+  "openai": {
+    "api_key": "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",
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free",
+    "max_completion_tokens": 20000
+  },
+  "feishu": {
+    "enabled": true,
+    "app_id": "cli_a96a2c029539dcdb",
+    "app_secret": "8qNOBzNj51gDsi331uOp9bYvWVjK6nIs"
+  },
+  "workspace": {
+    "path": "./workspace"
+  }
+}
