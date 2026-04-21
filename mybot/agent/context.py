@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from ..skills import SkillsLoader
+from ..workspace.skills import SkillsLoader
 
 
 class ContextBuilder:

@@ -44,6 +44,8 @@ _JSON_CONFIG = _load_json_config()
 _OPENAI_CONFIG = _section(_JSON_CONFIG, "openai")
 _FEISHU_CONFIG = _section(_JSON_CONFIG, "feishu")
 _WORKSPACE_CONFIG = _section(_JSON_CONFIG, "workspace")
+_DEBUG_CONFIG = _section(_JSON_CONFIG, "debug")
+_BROWSER_CONFIG = _section(_JSON_CONFIG, "browser")
 
 
 def _resolve_workspace_path(raw_value: str | Path) -> Path:
@@ -74,6 +76,22 @@ class FeishuConfig:
                 "",
             )
         ).strip()
+    )
+
+
+@dataclass
+class BrowserConfig:
+    headed: bool = field(
+        default_factory=lambda: _config_bool(
+            _BROWSER_CONFIG, "headed", "MYBOT_BROWSER_HEADED", True
+        )
+    )
+    session_map: dict[str, str] = field(
+        default_factory=lambda: {
+            str(key).strip().lower(): str(value).strip()
+            for key, value in _BROWSER_CONFIG.get("session_map", {}).items()
+            if str(key).strip() and str(value).strip()
+        }
     )
 
 
@@ -112,6 +130,15 @@ class GatewayConfig:
             )
         )
     )
+    show_internal_process: bool = field(
+        default_factory=lambda: _config_bool(
+            _DEBUG_CONFIG,
+            "show_internal_process",
+            "MYBOT_SHOW_INTERNAL_PROCESS",
+            False,
+        )
+    )
+    browser: BrowserConfig = field(default_factory=BrowserConfig)
     feishu: FeishuConfig = field(default_factory=FeishuConfig)
 
 

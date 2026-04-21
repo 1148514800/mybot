@@ -1,0 +1,188 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - generic [ref=e7]:
+      - banner "Global Navigation Menu" [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - button "Open menu" [ref=e12] [cursor=pointer]:
+              - img [ref=e13]
+            - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+              - /url: /
+              - img [ref=e16]
+          - generic [ref=e18]:
+            - navigation "Breadcrumbs" [ref=e19]:
+              - list [ref=e20]:
+                - listitem [ref=e21]:
+                  - link "Dashboard" [ref=e22] [cursor=pointer]:
+                    - /url: https://github.com/
+                    - generic [ref=e23]: Dashboard
+            - button "Search or jump to…" [ref=e26] [cursor=pointer]:
+              - generic [ref=e27]:
+                - generic:
+                  - img
+                - generic [ref=e28]:
+                  - generic:
+                    - text: Type
+                    - generic: /
+                    - text: to search
+          - generic [ref=e29]:
+            - generic [ref=e30]:
+              - generic [ref=e33]:
+                - link "Chat with Copilot" [ref=e35] [cursor=pointer]:
+                  - /url: /copilot
+                  - img [ref=e36]
+                - button "Open Copilot…" [ref=e40] [cursor=pointer]:
+                  - generic:
+                    - img
+              - button "Create new..." [ref=e42] [cursor=pointer]:
+                - generic [ref=e43]:
+                  - generic:
+                    - img
+                - generic:
+                  - img
+              - link "Issues (g then i)" [ref=e44] [cursor=pointer]:
+                - /url: /issues
+                - img [ref=e45]
+              - link "Pull requests (g then p)" [ref=e48] [cursor=pointer]:
+                - /url: /pulls
+                - img [ref=e49]
+              - link "Repositories" [ref=e51] [cursor=pointer]:
+                - /url: /repos
+                - img [ref=e52]
+            - link "You have no unread notifications (g then n)" [ref=e54] [cursor=pointer]:
+              - /url: /notifications
+              - img [ref=e55]
+            - button "Open user navigation menu" [ref=e58] [cursor=pointer]:
+              - img "black god" [ref=e59]
+      - region "Important update" [ref=e61]:
+        - img [ref=e63]
+        - generic [ref=e66]:
+          - heading "Important update" [level=2] [ref=e68]
+          - generic [ref=e70]:
+            - text: On April 24 we'll start using GitHub Copilot interaction data for AI model training unless you opt out.
+            - link "Review this update" [ref=e71] [cursor=pointer]:
+              - /url: https://gh.io/AAzfaht
+            - text: and manage your preferences in your
+            - link "GitHub account settings" [ref=e72] [cursor=pointer]:
+              - /url: https://github.com/settings/copilot/features
+            - text: .
+        - button "Dismiss banner" [ref=e73] [cursor=pointer]:
+          - img [ref=e74]
+  - generic [ref=e79]:
+    - complementary "Account" [ref=e80]:
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - img [ref=e88]
+          - generic [ref=e91]: Loading
+        - paragraph
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - main [ref=e96]:
+          - generic [ref=e98]:
+            - heading "Dashboard" [level=1] [ref=e99]
+            - heading "Home" [level=2] [ref=e101]
+            - generic [ref=e102]:
+              - generic [ref=e106]:
+                - generic [ref=e110]:
+                  - textbox "Ask anything or type @ to add context" [ref=e113]
+                  - generic [ref=e114]:
+                    - button "Ask" [ref=e117] [cursor=pointer]:
+                      - generic [ref=e118]:
+                        - generic:
+                          - img
+                        - generic [ref=e119]: Ask
+                      - generic:
+                        - img
+                    - generic [ref=e120]:
+                      - button "Select repositories to attach to conversation" [ref=e121] [cursor=pointer]:
+                        - generic [ref=e122]:
+                          - generic:
+                            - img
+                          - generic "All repositories" [ref=e124]
+                        - generic:
+                          - img
+                      - button "Add files, and spaces" [ref=e125] [cursor=pointer]:
+                        - img [ref=e126]
+                    - button "Send now (enter)" [ref=e130] [cursor=pointer]:
+                      - img [ref=e131]
+                - heading "Chat Commands" [level=2] [ref=e133]
+                - list [ref=e135]:
+                  - listitem [ref=e136]:
+                    - button "Agent" [ref=e137] [cursor=pointer]:
+                      - img [ref=e138]
+                      - generic [ref=e141]: Agent
+                  - listitem [ref=e142]:
+                    - button "Create issue" [ref=e143] [cursor=pointer]:
+                      - img [ref=e144]
+                      - generic [ref=e146]: Create issue
+                  - listitem [ref=e147]:
+                    - button "Write code" [ref=e148] [cursor=pointer]:
+                      - img [ref=e151]
+                      - generic [ref=e153]:
+                        - text: Write code
+                        - img [ref=e155]
+                  - listitem [ref=e157]:
+                    - button "Git" [ref=e158] [cursor=pointer]:
+                      - img [ref=e161]
+                      - generic [ref=e163]:
+                        - text: Git
+                        - img [ref=e165]
+                  - listitem [ref=e167]:
+                    - button "Pull requests" [ref=e168] [cursor=pointer]:
+                      - img [ref=e171]
+                      - generic [ref=e173]:
+                        - text: Pull requests
+                        - img [ref=e175]
+              - generic [ref=e177]:
+                - generic [ref=e178]:
+                  - heading "Feed" [level=2] [ref=e179]
+                  - group [ref=e182]:
+                    - button "Filter" [ref=e183] [cursor=pointer]:
+                      - img [ref=e184]
+                      - text: Filter
+                - generic [ref=e188]:
+                  - img "Loading your activity..." [ref=e190]
+                  - paragraph [ref=e191]: One moment please...
+        - contentinfo [ref=e192]:
+          - heading "Footer" [level=2] [ref=e193]
+          - generic [ref=e194]:
+            - generic [ref=e195]:
+              - link "GitHub Homepage" [ref=e196] [cursor=pointer]:
+                - /url: https://github.com
+                - img [ref=e197]
+              - generic [ref=e199]: © 2026 GitHub, Inc.
+            - navigation "Footer" [ref=e200]:
+              - heading "Footer navigation" [level=3] [ref=e201]
+              - list "Footer navigation" [ref=e202]:
+                - listitem [ref=e203]:
+                  - link "Terms" [ref=e204] [cursor=pointer]:
+                    - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+                - listitem [ref=e205]:
+                  - link "Privacy" [ref=e206] [cursor=pointer]:
+                    - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+                - listitem [ref=e207]:
+                  - link "Security" [ref=e208] [cursor=pointer]:
+                    - /url: https://github.com/security
+                - listitem [ref=e209]:
+                  - link "Status" [ref=e210] [cursor=pointer]:
+                    - /url: https://www.githubstatus.com/
+                - listitem [ref=e211]:
+                  - link "Community" [ref=e212] [cursor=pointer]:
+                    - /url: https://github.community/
+                - listitem [ref=e213]:
+                  - link "Docs" [ref=e214] [cursor=pointer]:
+                    - /url: https://docs.github.com/
+                - listitem [ref=e215]:
+                  - link "Contact" [ref=e216] [cursor=pointer]:
+                    - /url: https://support.github.com?tags=dotcom-footer
+                - listitem [ref=e217]:
+                  - button "Manage cookies" [ref=e219] [cursor=pointer]
+                - listitem [ref=e220]:
+                  - button "Do not share my personal information" [ref=e222] [cursor=pointer]
+      - complementary "Explore" [ref=e223]:
+        - generic [ref=e226]:
+          - img [ref=e227]
+          - generic [ref=e230]: Loading

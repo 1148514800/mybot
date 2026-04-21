@@ -38,14 +38,21 @@ class BaseChannel(ABC):
 class CLIChannel(BaseChannel):
     name = "cli"
 
+    def __init__(self, bus: MessageBus):
+        super().__init__(bus)
+        self._ready_for_input = asyncio.Event() # 异步开关
+        self._ready_for_input.set() # 默认开
+
     async def start(self):
         loop = asyncio.get_running_loop()
         while True:
+            await self._ready_for_input.wait()  # 等待可以输入的信号。第一次默认开，直接运行
             user_input = await loop.run_in_executor(None, lambda: input("You: ").strip())
             if not user_input:
                 continue
             if user_input.lower() in ("exit", "quit"):
                 return
+            self._ready_for_input.clear()   # 收到输入后，关掉输入开关，等 bot 回复后再开。
             await self.handle_message("user", "direct", user_input)
 
     async def stop(self):
@@ -53,6 +60,7 @@ class CLIChannel(BaseChannel):
 
     async def send(self, message: OutboundMessage):
         print(f"\nBot: {message.content}\n")
+        self._ready_for_input.set() # bot 回复后，开输入开关，让用户可以继续输入。
 
 
 class FeishuChannel(BaseChannel):

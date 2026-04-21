@@ -1,16 +1,28 @@
 {
   "openai": {
-    "api_key": "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",
-    "base_url": "https://openrouter.ai/api/v1",
-    "model": "nvidia/nemotron-3-super-120b-a12b:free",
+    "api_key": "sk-hcknpuyqwetwgceqrreqfmvdyajvdfwaedodfxjhkvtnvnrx",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "model": "Qwen/Qwen3-235B-A22B-Instruct-2507",
     "max_completion_tokens": 20000
   },
   "feishu": {
-    "enabled": true,
+    "enabled": false,
     "app_id": "cli_a96a2c029539dcdb",
     "app_secret": "8qNOBzNj51gDsi331uOp9bYvWVjK6nIs"
   },
   "workspace": {
     "path": "./workspace"
+  },
+  "browser": {
+    "headed": true,
+    "session_map": {
+      "douyin.com": "douyin_main",
+      "github.com": "github_main",
+      "feishu.cn": "feishu_main",
+      "baidu.com": "baidu_main"
+    }
+  },
+  "debug": {
+    "show_internal_process": true
   }
 }
