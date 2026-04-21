@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..core.config import BrowserConfig
 from .base import Tool
+from .browser import (
+    BrowserClickTool,
+    BrowserCloseTool,
+    BrowserEvalTool,
+    BrowserOpenTool,
+    BrowserPressTool,
+    BrowserSnapshotTool,
+    BrowserTypeTool,
+)
 from .exec import ExecTool
 from .file_tools import ReadFileTool, WriteFileTool
 
@@ -27,9 +37,19 @@ class ToolRegistry:
             return f"Error: {exc}"
 
 
-def build_default_tool_registry(workspace: Path) -> ToolRegistry:
+def build_default_tool_registry(
+    workspace: Path,
+    browser_config: BrowserConfig | None = None,
+) -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(ExecTool())
+    registry.register(BrowserOpenTool(browser_config=browser_config))
+    registry.register(BrowserSnapshotTool())
+    registry.register(BrowserClickTool())
+    registry.register(BrowserTypeTool())
+    registry.register(BrowserPressTool())
+    registry.register(BrowserEvalTool())
+    registry.register(BrowserCloseTool())
     registry.register(ReadFileTool(workspace))
     registry.register(WriteFileTool(workspace))
     return registry

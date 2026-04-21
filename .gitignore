@@ -10,4 +10,6 @@ wheels/
 .venv
 
 # Local runtime config
-mybot/config.json
+mybot/core/config.json
+mybot/workspace/sessions/
+mybot/workspace/.playwright-cli/
