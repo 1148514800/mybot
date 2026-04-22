@@ -4,20 +4,25 @@ import asyncio
 
 from ..agent import AgentLoop, ContextBuilder
 from ..messaging import CLIChannel, FeishuChannel, BaseChannel, MessageBus, route_outbound
-from ..session import SessionManager
+from ..storage.memory import MemoryManager
+from ..storage.session import SessionManager
+from ..storage.state import StateManager
 from ..tools import build_default_tool_registry
-from ..workspace import init_workspace
+from ..workspace import init_instructions, init_workspace
 from .config import GatewayConfig, build_client
 
 
 async def run_gateway(config: GatewayConfig | None = None) -> None:
-    config = config or GatewayConfig()
-    init_workspace(config.workspace)
+    config = config or GatewayConfig()  # 初始化配置
+    init_instructions(config.workspace / "instructions")    # 初始化智能体角色
+    init_workspace(config.workspace)    # 初始化工作空间
 
-    bus = MessageBus()
-    tools = build_default_tool_registry(config.workspace, config.browser)
-    context = ContextBuilder(config.workspace)
-    sessions = SessionManager(config.workspace)
+    bus = MessageBus()  # 消息总线
+    memory = MemoryManager(config.workspace)    # 初始化长期记忆
+    state = StateManager(config.workspace)  # 初始化运行状态
+    tools = build_default_tool_registry(config.workspace, config.browser, state, memory)    # 初始化工具
+    context = ContextBuilder(config.workspace, state_manager=state, memory_manager=memory)  # 构建上下文
+    sessions = SessionManager(config.workspace) # 保存短期会话历史
     agent = AgentLoop(
         client=build_client(config),
         config=config,

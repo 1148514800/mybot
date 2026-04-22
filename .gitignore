@@ -7,9 +7,15 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
 # Local runtime config
-mybot/core/config.json
-mybot/workspace/sessions/
-mybot/workspace/.playwright-cli/
+config/config.json
+
+# Runtime data
+workspace/sessions/
+workspace/memory/
+workspace/state/
+
+# Playwright runtime artifacts
+.playwright-cli/

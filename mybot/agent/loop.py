@@ -8,7 +8,7 @@ from openai import OpenAI
 
 from ..core.config import GatewayConfig
 from ..messaging import MessageBus, OutboundMessage
-from ..session import SessionManager
+from ..storage.session import SessionManager
 from ..tools import ToolRegistry
 from .context import ContextBuilder
 
@@ -34,6 +34,28 @@ class AgentLoop:
         if self.config.show_internal_process:
             print(f"[trace] {message}")
 
+    def _build_session_summary(self, session) -> str:
+        recent = session.messages[-20:]
+        user_messages = [
+            str(message.get("content", "")).strip()
+            for message in recent
+            if message.get("role") == "user" and str(message.get("content", "")).strip()
+        ]
+        assistant_messages = [
+            str(message.get("content", "")).strip()
+            for message in recent
+            if message.get("role") == "assistant" and str(message.get("content", "")).strip()
+        ]
+
+        summary_parts: list[str] = []
+        if user_messages:
+            summary_parts.append(f"Recent user focus: {user_messages[-1][:200]}")
+        if len(user_messages) >= 2:
+            summary_parts.append(f"Previous user request: {user_messages[-2][:200]}")
+        if assistant_messages:
+            summary_parts.append(f"Recent assistant reply: {assistant_messages[-1][:200]}")
+        return "\n".join(summary_parts).strip()
+
     async def run(self):
         while True:
             try:
@@ -42,7 +64,7 @@ class AgentLoop:
                 continue
 
             session = self.sessions.get_or_create(message.session_key)
-            history = session.get_history(max_messages=50)
+            history = session.build_prompt_history(max_recent_messages=12)
             messages = self.context.build_messages(history, message.content)
             # self._trace(f"session={message.session_key} user={message.content}")
             reply = await self._react_loop(messages)
@@ -61,6 +83,7 @@ class AgentLoop:
                     "timestamp": datetime.now().isoformat(),
                 }
             )
+            session.update_summary(self._build_session_summary(session))
             self.sessions.save(session)
 
             await self.bus.publish_outbound(

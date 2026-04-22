@@ -4,6 +4,7 @@ import asyncio
 import subprocess
 
 from ..core.config import BrowserConfig
+from ..storage.state import StateManager
 from .base import Tool
 
 _ACTIVE_SESSION = "default"
@@ -19,7 +20,6 @@ class PlaywrightCliTool(Tool):
         _ACTIVE_SESSION = session.strip() or "default"
 
     def _session_prefix(self, session: str) -> list[str]:
-        # session 是浏览器会话名，对应 playwright-cli -s=xxx
         resolved = self._resolve_session(session)
         return ["playwright-cli", f"-s={resolved}"]
 
@@ -43,8 +43,13 @@ class PlaywrightCliTool(Tool):
 
 
 class BrowserOpenTool(PlaywrightCliTool):
-    def __init__(self, browser_config: BrowserConfig | None = None):
+    def __init__(
+        self,
+        browser_config: BrowserConfig | None = None,
+        state_manager: StateManager | None = None,
+    ):
         self._browser_config = browser_config or BrowserConfig()
+        self._state_manager = state_manager
 
     def _default_session_for_url(self, url: str) -> str:
         normalized = url.strip().lower()
@@ -78,13 +83,11 @@ class BrowserOpenTool(PlaywrightCliTool):
                     "enum": ["chrome", "msedge", "firefox", "webkit"],
                     "default": "chrome",
                 },
-                # session 是浏览器会话名，为空时按配置里的域名映射自动选择
                 "session": {
                     "type": "string",
                     "description": "Browser session name. Leave empty to auto-select by URL.",
                     "default": "",
                 },
-                # persistent 表示持久化浏览器 profile，用来尽量保留登录态
                 "persistent": {
                     "type": "boolean",
                     "description": "Use persistent browser profile",
@@ -105,6 +108,7 @@ class BrowserOpenTool(PlaywrightCliTool):
         resolved_url = url.strip()
         resolved_session = session.strip() or self._default_session_for_url(resolved_url)
         resolved_headed = self._browser_config.headed if headed is None else headed
+
         parts = self._session_prefix(resolved_session) + ["open"]
         if resolved_url:
             parts.append(resolved_url)
@@ -114,9 +118,16 @@ class BrowserOpenTool(PlaywrightCliTool):
             parts.append(f"--browser={browser.strip()}")
         if persistent:
             parts.append("--persistent")
+
         result = await self._run_parts(parts)
         if not result.startswith("Error:"):
             self._set_active_session(resolved_session)
+            if self._state_manager:
+                self._state_manager.update_browser_state(
+                    session_name=resolved_session,
+                    last_opened_url=resolved_url or "about:blank",
+                    headed=resolved_headed,
+                )
         return result
 
 
@@ -173,6 +184,91 @@ class BrowserSnapshotTool(PlaywrightCliTool):
         if target.strip():
             parts.append(target.strip())
         return await self._run_parts(parts)
+
+
+class BrowserGotoTool(PlaywrightCliTool):
+    def __init__(self, state_manager: StateManager | None = None):
+        self._state_manager = state_manager
+
+    @property
+    def name(self) -> str:
+        return "browser_goto"
+
+    @property
+    def description(self) -> str:
+        return "Navigate the current page in an existing browser session to a URL."
+
+    @property
+    def parameters(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "URL to navigate to"},
+                "session": {
+                    "type": "string",
+                    "description": "Browser session name",
+                    "default": "",
+                },
+            },
+            "required": ["url"],
+        }
+
+    async def execute(self, url: str, session: str = "", **kwargs) -> str:
+        resolved_session = self._resolve_session(session)
+        resolved_url = url.strip()
+        parts = self._session_prefix(resolved_session) + ["goto", resolved_url]
+        result = await self._run_parts(parts)
+        if not result.startswith("Error:"):
+            self._set_active_session(resolved_session)
+            if self._state_manager:
+                self._state_manager.update_browser_state(
+                    session_name=resolved_session,
+                    last_opened_url=resolved_url,
+                )
+        return result
+
+
+class BrowserNewTabTool(PlaywrightCliTool):
+    def __init__(self, state_manager: StateManager | None = None):
+        self._state_manager = state_manager
+
+    @property
+    def name(self) -> str:
+        return "browser_new_tab"
+
+    @property
+    def description(self) -> str:
+        return "Open a new tab in an existing browser session."
+
+    @property
+    def parameters(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "URL to open in a new tab"},
+                "session": {
+                    "type": "string",
+                    "description": "Browser session name",
+                    "default": "",
+                },
+            },
+            "required": ["url"],
+        }
+
+    async def execute(self, url: str, session: str = "", **kwargs) -> str:
+        resolved_session = self._resolve_session(session)
+        resolved_url = url.strip()
+        script = f"window.open('{resolved_url}', '_blank')"
+        parts = self._session_prefix(resolved_session) + ["eval", script]
+        result = await self._run_parts(parts)
+        if not result.startswith("Error:"):
+            self._set_active_session(resolved_session)
+            if self._state_manager:
+                self._state_manager.update_browser_state(
+                    session_name=resolved_session,
+                    last_opened_url=resolved_url,
+                )
+        return result
 
 
 class BrowserClickTool(PlaywrightCliTool):

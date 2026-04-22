@@ -8,6 +8,7 @@ from .browser import (
     BrowserSnapshotTool,
     BrowserTypeTool,
 )
+from .memory import MemoryReadTool, MemoryWriteTool
 from .registry import ToolRegistry, build_default_tool_registry
 
 __all__ = [
@@ -21,4 +22,6 @@ __all__ = [
     "BrowserPressTool",
     "BrowserEvalTool",
     "BrowserCloseTool",
+    "MemoryWriteTool",
+    "MemoryReadTool",
 ]

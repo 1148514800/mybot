@@ -8,8 +8,10 @@ from pathlib import Path
 from openai import OpenAI
 
 
-CONFIG_FILE = Path(__file__).resolve().with_name("config.json")
 PACKAGE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = PACKAGE_DIR.parent
+CONFIG_DIR = PROJECT_DIR / "config"
+CONFIG_FILE = CONFIG_DIR / "config.json"
 
 
 def _load_json_config() -> dict:
@@ -27,9 +29,11 @@ def _section(data: dict, name: str) -> dict:
 
 
 def _config_value(data: dict, key: str, env_name: str, default=None):
+    '''按优先级读取配置值：环境变量优先，其次配置字典，最后默认值。'''
     env_value = os.getenv(env_name)
     if env_value not in (None, ""):
         return env_value
+    
     return data.get(key, default)
 
 
@@ -52,7 +56,7 @@ def _resolve_workspace_path(raw_value: str | Path) -> Path:
     path = Path(raw_value).expanduser()
     if path.is_absolute():
         return path
-    return (PACKAGE_DIR / path).resolve()
+    return (PROJECT_DIR / path).resolve()
 
 
 @dataclass
@@ -108,7 +112,7 @@ class GatewayConfig:
                 _WORKSPACE_CONFIG,
                 "path",
                 "MYBOT_WORKSPACE",
-                PACKAGE_DIR / "workspace",
+                PROJECT_DIR / "workspace",
             )
         )
     )
