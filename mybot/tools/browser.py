@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import subprocess
 
 from ..core.config import BrowserConfig
@@ -23,21 +24,31 @@ class PlaywrightCliTool(Tool):
         resolved = self._resolve_session(session)
         return ["playwright-cli", f"-s={resolved}"]
 
+    def _spawn_command(self, parts: list[str]) -> tuple[list[str], dict]:
+        if os.name == "nt":
+            kwargs = {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+            return ["cmd", "/c", *parts], kwargs
+        return parts, {}
+
     async def _run_parts(self, parts: list[str]) -> str:
         try:
+            command, extra_kwargs = self._spawn_command(parts)
             proc = await asyncio.create_subprocess_exec(
-                "cmd",
-                "/c",
-                *parts,
+                *command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                **extra_kwargs,
             )
             out, err = await asyncio.wait_for(proc.communicate(), timeout=60)
             result = out.decode(errors="replace")
             if err:
                 result += f"\nSTDERR:\n{err.decode(errors='replace')}"
             return (result or "(no output)")[:12000]
+        except FileNotFoundError:
+            return (
+                "Error: playwright-cli was not found in PATH. "
+                "Install Node.js and playwright-cli in this environment first."
+            )
         except Exception as exc:
             return f"Error: {type(exc).__name__}: {exc}"
 

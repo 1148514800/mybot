@@ -34,6 +34,14 @@ class AgentLoop:
         if self.config.show_internal_process:
             print(f"[trace] {message}")
 
+    def _is_rate_limit_error(self, exc: Exception) -> bool:
+        text = f"{type(exc).__name__}: {exc}"
+        return (
+            "RateLimitError" in text
+            or "429" in text
+            or "TPM limit reached" in text
+        )
+
     def _build_session_summary(self, session) -> str:
         recent = session.messages[-20:]
         user_messages = [
@@ -66,7 +74,6 @@ class AgentLoop:
             session = self.sessions.get_or_create(message.session_key)
             history = session.build_prompt_history(max_recent_messages=12)
             messages = self.context.build_messages(history, message.content)
-            # self._trace(f"session={message.session_key} user={message.content}")
             reply = await self._react_loop(messages)
 
             session.messages.append(
@@ -92,7 +99,8 @@ class AgentLoop:
 
     async def _react_loop(self, messages: list[dict]) -> str:
         final_parts: list[str] = []
-        for step in range(10):
+        rate_limit_retries = 0
+        for step in range(self.config.max_react_steps):
             self._trace(f"model step={step + 1}")
             try:
                 response = self.client.chat.completions.create(
@@ -103,6 +111,17 @@ class AgentLoop:
                     max_tokens=self.config.max_completion_tokens,
                 )
             except Exception as exc:
+                if (
+                    self._is_rate_limit_error(exc)
+                    and rate_limit_retries < self.config.rate_limit_retries
+                ):
+                    rate_limit_retries += 1
+                    self._trace(
+                        "rate limited, waiting 60s before retry "
+                        f"{rate_limit_retries}/{self.config.rate_limit_retries}"
+                    )
+                    await asyncio.sleep(60)
+                    continue
                 return f"调用模型时出错: {type(exc).__name__}: {exc}"
 
             choice = response.choices[0]

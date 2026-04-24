@@ -1,17 +1,14 @@
 # MyBot
 
-一个本地运行的 Agent 项目，当前支持：
-
-- `cli` 交互
-- `feishu` 渠道接入
-- 基于 `playwright-cli` 的浏览器操作
-- 会话历史、长期记忆、运行时状态三层分离
+MyBot 是一个本地可调用工具的 Agent，支持通过 `cli` 或 `feishu` 运行，能够使用 `playwright-cli` 管理浏览器会话，持久化长期记忆，并从 workspace 中加载本地 skills。
 
 ## 时间线
 
 - `2026/04/17`：提交初始版本
 - `2026/04/21`：提交加入浏览器自动化能力的版本，支持 `playwright-cli`、浏览器配置、`session_map` 和 `headed`
 - `2026/04/22`：完成结构整理与记忆体系改造，配置独立到 `config/`，运行数据统一到根目录 `workspace/`，并新增运行时状态层、长期记忆层和 session 摘要机制
+- `2026/04/23`：完成 `llm` 多 provider 的支持，支持模型限速时的自动等待和重试
+- `2026/04/24`：完成 `linux` 的支持
 
 ## TODO
 
@@ -19,7 +16,32 @@
 - 为执行型请求补更强的工具调用兜底
 - 为浏览器 session 增加更可靠的存活性检查
 
-## 目录结构
+## 功能概览
+
+- 本地 CLI 交互
+- 可选的飞书通道
+- 基于 `playwright-cli` 的浏览器自动化能力
+- 本地 workspace，包含 instructions、skills、memory、sessions 和 runtime state
+- 支持浏览器、文件、exec、memory 等工具的 Agent 循环
+- 基于 `llm` 的多 provider 大模型配置
+- 模型限速时支持自动等待并按配置重试
+
+## 当前 Skills
+
+本地 skills 位于：
+
+```text
+workspace/skills/
+```
+
+当前 workspace 中已有：
+
+- `fanqie-author`
+- `playwright-cli`
+- `self-improving-agent`
+- `weather`
+
+## 项目结构
 
 ```text
 config/
@@ -34,7 +56,6 @@ mybot/
     __init__.py
     loader.py
   storage/
-    __init__.py
     memory/
     session/
     state/
@@ -51,7 +72,9 @@ workspace/
     USER.md
     TOOLS.md
   skills/
+    fanqie-author/
     playwright-cli/
+    self-improving-agent/
     weather/
   memory/
     memory.json
@@ -61,47 +84,43 @@ workspace/
     runtime_state.json
 ```
 
-目录职责：
+## 配置
 
-- `config/`：配置文件
-- `workspace/instructions/`：规则与说明文件，例如 `SOUL.md`、`USER.md`
-- `workspace/skills/`：本地 skill 目录
-- `workspace/memory/`：长期记忆
-- `workspace/sessions/`：短期会话历史
-- `workspace/state/`：运行时状态
-- `mybot/storage/`：对 `memory`、`session`、`state` 的代码管理层
-
-## 配置文件
-
-真实配置文件路径：
+主配置文件：
 
 ```text
 config/config.json
 ```
 
-示例配置文件路径：
+示例配置：
 
 ```text
 config/config.example.json
 ```
 
-`config.json` 当前主要包含 5 个配置段：
+项目现在统一使用顶层 `llm` 配置，不再单独使用旧的 `openai` 顶层配置。
 
-- `openai`
-- `feishu`
-- `workspace`
-- `browser`
-- `debug`
-
-示例：
+### 示例
 
 ```json
 {
-  "openai": {
-    "api_key": "YOUR_API_KEY",
-    "base_url": "https://api.siliconflow.cn/v1",
-    "model": "Qwen/Qwen3-235B-A22B-Instruct-2507",
-    "max_completion_tokens": 20000
+  "llm": {
+    "provider": "siliconflow",
+    "max_completion_tokens": 20000,
+    "rate_limit_retries": 2,
+    "max_react_steps": 10,
+    "providers": {
+      "siliconflow": {
+        "api_key": "YOUR_SILICONFLOW_API_KEY",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "Qwen/Qwen3-235B-A22B-Instruct-2507"
+      },
+      "openai": {
+        "api_key": "YOUR_OPENAI_API_KEY",
+        "base_url": "https://api.openai.com/v1",
+        "model": "gpt-4.1-mini"
+      }
+    }
   },
   "feishu": {
     "enabled": false,
@@ -126,164 +145,131 @@ config/config.example.json
 }
 ```
 
-参数说明：
+### `llm` 字段说明
 
-- `openai.api_key`：模型接口密钥
-- `openai.base_url`：兼容 OpenAI 协议的接口地址
-- `openai.model`：当前使用的模型名
-- `openai.max_completion_tokens`：单次补全上限
-- `feishu.enabled`：是否启用飞书渠道
-- `feishu.app_id` / `feishu.app_secret`：飞书配置
-- `workspace.path`：工作区根目录，默认是根目录下的 `workspace/`
-- `browser.headed`：默认是否以可见浏览器窗口运行
-- `browser.session_map`：域名到浏览器 session 的默认映射
-- `debug.show_internal_process`：是否打印内部 trace
+- `llm.provider`：当前启用的 provider 名称
+- `llm.providers.<name>.api_key`：对应 provider 的 API Key
+- `llm.providers.<name>.base_url`：对应 provider 的 Base URL
+- `llm.providers.<name>.model`：对应 provider 的模型名称
+- `llm.max_completion_tokens`：单次模型响应的最大 token 数
+- `llm.max_react_steps`：单次用户请求允许的最大 Agent 循环步数
+- `llm.rate_limit_retries`：模型限速时允许自动重试的次数
 
-## 会话历史
+### 其他字段说明
 
-会话文件保存在：
+- `feishu.enabled`：是否启用飞书通道
+- `workspace.path`：workspace 根目录
+- `browser.headed`：默认是否打开可见浏览器窗口
+- `browser.session_map`：将域名映射到默认浏览器 session
+- `debug.show_internal_process`：是否打印内部 trace 日志
+
+## 运行时数据
+
+### Sessions
+
+会话历史存放在：
 
 ```text
 workspace/sessions/
 ```
 
-当前 session 存储格式采用：
+每个会话文件是 JSONL，包含：
 
-- 第一行 `meta`：保存滚动摘要
-- 后续多行：保存原始消息
+- 一条 `meta` 记录，用于保存会话摘要
+- 用户与 assistant 的消息记录
 
-示意：
+### Memory
 
-```json
-{"type":"meta","summary":"最近在做浏览器自动化，主要操作 GitHub 和番茄小说。"}
-{"role":"user","content":"打开 GitHub"}
-{"role":"assistant","content":"已打开 GitHub"}
-```
-
-当前 prompt 构造时不再全量使用完整会话，而是使用：
-
-- `session summary`
-- 最近少量原始消息
-
-这样做的目的：
-
-- 降低 token 消耗
-- 减少 assistant 旧长回复重复污染
-- 保留短期上下文连续性
-
-## 长期记忆
-
-长期记忆文件路径：
+长期记忆存放在：
 
 ```text
 workspace/memory/memory.json
 ```
 
-当前长期记忆分为几类：
+当前 memory 结构包含：
 
 - `user_preferences`
 - `project_facts`
 - `browser_preferences`
 - `custom_facts`
 
-其中 `custom_facts` 支持通用长期记忆项，包含：
+### Runtime State
 
-- `key`
-- `value`
-- `category`
-- `source`
-- `updated_at`
-
-适合写入长期记忆的内容：
-
-- 用户偏好
-- 项目长期事实
-- 长期约定
-
-不适合写入长期记忆的内容：
-
-- 当前网页状态
-- 一次性工具结果
-- 临时错误
-
-## 运行时状态
-
-运行时状态文件路径：
+运行时浏览器状态存放在：
 
 ```text
 workspace/state/runtime_state.json
 ```
 
-它用于保存“当前状态”，不是长期记忆。
+它用于保存临时状态，例如：
 
-当前主要记录浏览器状态，结构是按 `session` 并存：
+- 当前活跃浏览器 session
+- 最近打开的 URL
+- headed 模式
+- 已知浏览器 sessions
 
-```json
-{
-  "browser": {
-    "active_session": "default",
-    "sessions": {
-      "default": {
-        "last_opened_url": "https://fanqienovel.com",
-        "headed": true,
-        "updated_at": "2026-04-22T15:02:58.818809"
-      },
-      "github_main": {
-        "last_opened_url": "https://github.com",
-        "headed": true,
-        "updated_at": "2026-04-22T15:01:53.363045"
-      }
-    }
-  }
-}
-```
+## 工具
 
-含义：
+当前默认注册的工具包括：
 
-- `active_session`：当前活跃浏览器会话
-- `sessions.<name>.last_opened_url`：该 session 当前页面
-- `sessions.<name>.headed`：该 session 是否可见
-- `sessions.<name>.updated_at`：最后更新时间
-
-这层数据会在浏览器工具成功执行后自动更新。
-
-## 浏览器能力
-
-当前浏览器工具包括：
-
+- `exec`
 - `browser_open`
+- `browser_snapshot`
 - `browser_goto`
 - `browser_new_tab`
-- `browser_snapshot`
 - `browser_click`
 - `browser_type`
 - `browser_press`
 - `browser_eval`
 - `browser_close`
+- `memory_write`
+- `memory_read`
+- `read_file`
+- `write_file`
 
-当前约定：
+## 限速处理
 
-- 首次打开浏览器通常使用 `browser_open`
-- 已有可复用 session 时，普通打开网站更适合使用 `browser_goto`
-- 明确要求“新开一个页面/标签页”时更适合使用 `browser_new_tab`
+如果模型调用触发类似 `429` 或 `TPM limit reached` 的限速错误，Agent 会：
+
+1. 先等待 60 秒
+2. 自动重试
+3. 在超过 `llm.rate_limit_retries` 后停止重试并返回错误
 
 ## 启动方式
 
-项目根目录运行：
+直接使用 Python 运行：
 
 ```bash
 python mybot/main.py
 ```
 
-如果使用虚拟环境：
+Windows 本地虚拟环境下：
 
 ```bash
 .venv/Scripts/python.exe mybot/main.py
 ```
 
-## GitHub 上传注意事项
+Linux 虚拟环境下：
 
-- 不要上传真实配置文件 `config/config.json`
-- 仓库中使用 `config/config.example.json` 作为示例
-- `workspace/sessions/`、`workspace/state/`、`workspace/memory/` 属于运行数据，通常不应直接提交
-- 如果某些文件曾经已经被 git 跟踪，仅增加 `.gitignore` 还不够，需要额外从 git 索引移除
+```bash
+.venv/bin/python mybot/main.py
+```
+
+## 说明
+
+- 浏览器工具依赖环境中可用的 `playwright-cli`
+- 本地 skills 会从 `workspace/skills/*/SKILL.md` 自动发现
+- API Key 建议尽量不要明文提交到仓库，使用环境变量会更安全
+
+## Linux 迁移说明
+
+项目现在已经对浏览器工具的进程启动方式做了 Windows / Linux 分支处理，但迁移到 Linux 仍需要准备运行环境。
+
+至少需要：
+
+- Python 与虚拟环境
+- Node.js
+- `playwright-cli`
+- Playwright 需要的浏览器与系统依赖
+
+如果 Linux 环境里没有 `playwright-cli`，浏览器工具会返回更明确的提示，而不是直接依赖 Windows 的 `cmd /c` 逻辑。

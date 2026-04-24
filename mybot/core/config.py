@@ -45,11 +45,32 @@ def _config_bool(data: dict, key: str, env_name: str, default: bool = False) -> 
 
 
 _JSON_CONFIG = _load_json_config()
-_OPENAI_CONFIG = _section(_JSON_CONFIG, "openai")
+_LLM_CONFIG = _section(_JSON_CONFIG, "llm")
 _FEISHU_CONFIG = _section(_JSON_CONFIG, "feishu")
 _WORKSPACE_CONFIG = _section(_JSON_CONFIG, "workspace")
 _DEBUG_CONFIG = _section(_JSON_CONFIG, "debug")
 _BROWSER_CONFIG = _section(_JSON_CONFIG, "browser")
+
+
+def _active_llm_provider() -> str:
+    provider = str(_LLM_CONFIG.get("provider", "")).strip()
+    if provider:
+        return provider
+    return ""
+
+
+def _active_llm_config() -> dict:
+    providers = _LLM_CONFIG.get("providers", {})
+    if isinstance(providers, dict):
+        provider_name = _active_llm_provider()
+        provider_config = providers.get(provider_name, {})
+        if isinstance(provider_config, dict):
+            return provider_config
+    return {}
+
+
+_ACTIVE_LLM_PROVIDER = _active_llm_provider()
+_ACTIVE_LLM_CONFIG = _active_llm_config()
 
 
 def _resolve_workspace_path(raw_value: str | Path) -> Path:
@@ -101,9 +122,30 @@ class BrowserConfig:
 
 @dataclass
 class GatewayConfig:
+    provider: str = field(default_factory=lambda: _ACTIVE_LLM_PROVIDER)
     model: str = field(
         default_factory=lambda: _config_value(
-            _OPENAI_CONFIG, "model", "MYBOT_MODEL", "gpt-4.1-mini"
+            _ACTIVE_LLM_CONFIG, "model", "MYBOT_MODEL", "gpt-4.1-mini"
+        )
+    )
+    rate_limit_retries: int = field(
+        default_factory=lambda: int(
+            _config_value(
+                _LLM_CONFIG or _ACTIVE_LLM_CONFIG,
+                "rate_limit_retries",
+                "MYBOT_RATE_LIMIT_RETRIES",
+                2,
+            )
+        )
+    )
+    max_react_steps: int = field(
+        default_factory=lambda: int(
+            _config_value(
+                _LLM_CONFIG or _ACTIVE_LLM_CONFIG,
+                "max_react_steps",
+                "MYBOT_MAX_REACT_STEPS",
+                10,
+            )
         )
     )
     workspace: Path = field(
@@ -117,17 +159,17 @@ class GatewayConfig:
         )
     )
     api_key: str | None = field(
-        default_factory=lambda: _config_value(_OPENAI_CONFIG, "api_key", "OPENAI_API_KEY")
+        default_factory=lambda: _config_value(_ACTIVE_LLM_CONFIG, "api_key", "OPENAI_API_KEY")
     )
     base_url: str | None = field(
         default_factory=lambda: _config_value(
-            _OPENAI_CONFIG, "base_url", "OPENAI_BASE_URL"
+            _ACTIVE_LLM_CONFIG, "base_url", "OPENAI_BASE_URL"
         )
     )
     max_completion_tokens: int = field(
         default_factory=lambda: int(
             _config_value(
-                _OPENAI_CONFIG,
+                _LLM_CONFIG or _ACTIVE_LLM_CONFIG,
                 "max_completion_tokens",
                 "MYBOT_MAX_COMPLETION_TOKENS",
                 2000,
@@ -149,7 +191,7 @@ class GatewayConfig:
 def build_client(config: GatewayConfig) -> OpenAI:
     if not config.api_key:
         raise RuntimeError(
-            f"Missing api_key. Set OPENAI_API_KEY or add it to {CONFIG_FILE}."
+            f"Missing api_key for llm.provider='{config.provider}'. Set OPENAI_API_KEY or add it to {CONFIG_FILE}."
         )
 
     client_kwargs: dict[str, str] = {}
